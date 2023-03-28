@@ -108,11 +108,11 @@ void pfind(const char* dir_path, const char* perm_str,int start) {
 int main(int argc, char** argv) {
     char* dir_path = NULL;
     char* perm_str = NULL;
-	if(argc < 2) {
-		print_usage_error();
-		exit(EXIT_FAILURE);
-	}
     int opt;
+    if(argc == 1) {
+	print_usage_error();
+	exit(EXIT_FAILURE);
+    }
     while ((opt = getopt(argc, argv, ":hd:p:")) != -1) {
         switch (opt) {
         case 'h':
@@ -120,26 +120,21 @@ int main(int argc, char** argv) {
             exit(EXIT_SUCCESS);
         case 'd':
             dir_path = optarg;
-            break;
+	    break;
         case 'p':
             perm_str = optarg;
             break;
         case '?':
             fprintf(stderr, "Error: Unknown option '%c' received.\n",optopt);
 	    exit(EXIT_FAILURE);
-	default:
-	    print_usage_error();
-	    exit(EXIT_FAILURE);	    
+	}
+	}
+	if (dir_path == NULL) {
+            fprintf(stderr, "Error: Required argument -d <directory> not found.\n");
+            exit(EXIT_FAILURE);
         }
-    }
-
-    if (dir_path == NULL) {
-        fprintf(stderr, "Error: Required argument -d <directory> not found.\n");
-	    exit(EXIT_FAILURE);
-    }
-
-    if (perm_str == NULL) {
-        fprintf(stderr, "Error: Required argument -p <permissions string> not found.\n");
+    	if (perm_str == NULL) {
+       	    fprintf(stderr, "Error: Required argument -p <permissions string> not found.\n");
 	    exit(EXIT_FAILURE);
     }
     if (access(dir_path, F_OK)!= 0) {
