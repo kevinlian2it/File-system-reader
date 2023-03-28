@@ -57,8 +57,6 @@ void pfind(const char* dir_path, const char* perm_str,int start) {
     struct dirent* entry;
     struct stat entry_info;
     char entry_path[MAX_PATH_LENGTH];
-    char* home_dir = getenv("HOME");
-    int home_dir_len = strlen(home_dir);
     if (lstat(dir_path, &dir_info) != 0) {
     	fprintf(stderr, "Error: %s\n", "Cannot stat file.");
     	exit(EXIT_FAILURE);
@@ -82,22 +80,14 @@ void pfind(const char* dir_path, const char* perm_str,int start) {
         }
         if (S_ISDIR(entry_info.st_mode)) {
             if ((entry_info.st_mode & 0777) == (perm_string_to_int(perm_str) & 0777)) {
-             if (strncmp(entry_path, home_dir, home_dir_len) == 0) {
-                    printf("~%s\n", entry_path + home_dir_len);
-                } else {
                     printf("%s\n", entry_path);
-                }   	
             }
             if (entry_info.st_mode & S_IXUSR) { // recurse only if directory is executable
                 pfind(entry_path, perm_str,0);
             }
         } else if (S_ISREG(entry_info.st_mode)) {
             if ((entry_info.st_mode & 0777) == (perm_string_to_int(perm_str) & 0777)) {
-            	if (strncmp(entry_path, home_dir, home_dir_len) == 0) {
-                    printf("~%s\n", entry_path + home_dir_len);
-                } else {
                     printf("%s\n", entry_path);
-                }
 	    }
         }
     }
