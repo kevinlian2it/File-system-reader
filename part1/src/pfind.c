@@ -29,29 +29,48 @@ bool validate_permissions_string(const char* perm_str) {
     }
     return true;
 }
-
+int perm_string_to_int(const char* perm_str) {
+    int perm = 0;
+    for (int i = 0; i < 9; i++) {
+        if (i == 0 || i == 3 || i == 6) {
+            // Check for read permission
+            if (perm_str[i] == 'r') {
+                perm |= (1 << (8 - i));
+            }
+        } else if (i == 1 || i == 4 || i == 7) {
+            // Check for write permission
+            if (perm_str[i] == 'w') {
+                perm |= (1 << (8 - i));
+            }
+        } else {
+            // Check for execute permission
+            if (perm_str[i] == 'x') {
+                perm |= (1 << (8 - i));
+            }
+        }
+    }
+    return perm;
+}
 void pfind(const char* dir_path, const char* perm_str,int start) {
     struct stat dir_info;
     DIR* dir;
     struct dirent* entry;
     struct stat entry_info;
     char entry_path[MAX_PATH_LENGTH];
-
+    char* home_dir = getenv("HOME");
+    int home_dir_len = strlen(home_dir);
     if (lstat(dir_path, &dir_info) != 0) {
-        fprintf(stderr, "Error: %s\n", "Cannot stat directory.");
-        exit(EXIT_FAILURE);
-    }
-	if(start == 0) {
-    printf("%s\n", dir_path); // print directory if it matches
-	}
+    	fprintf(stderr, "Error: %s\n", "Cannot stat file.");
+    	exit(EXIT_FAILURE);
+    } 
     dir = opendir(dir_path);
     if (dir == NULL) {
-        fprintf(stderr, "Error: %s\n", "Cannot open directory.");
+        fprintf(stderr, "Error: Cannot open directory '%s'. Permission denied.\n",dir_path);
         exit(EXIT_FAILURE);
     }
 
     while ((entry = readdir(dir)) != NULL) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+	if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
             continue;
         }
 
@@ -61,18 +80,25 @@ void pfind(const char* dir_path, const char* perm_str,int start) {
             fprintf(stderr, "Error: %s\n", "Cannot stat file.");
             exit(EXIT_FAILURE);
         }
-
         if (S_ISDIR(entry_info.st_mode)) {
-            if ((entry_info.st_mode & 0777) == strtol(perm_str, NULL, 8)) {
-                printf("%s\n", entry_path); // print directory if it matches
+            if ((entry_info.st_mode & 0777) == (perm_string_to_int(perm_str) & 0777)) {
+             if (strncmp(entry_path, home_dir, home_dir_len) == 0) {
+                    printf("~%s\n", entry_path + home_dir_len);
+                } else {
+                    printf("%s\n", entry_path);
+                }   	
             }
             if (entry_info.st_mode & S_IXUSR) { // recurse only if directory is executable
                 pfind(entry_path, perm_str,0);
             }
         } else if (S_ISREG(entry_info.st_mode)) {
-            if ((entry_info.st_mode & 0777) == strtol(perm_str, NULL, 8)) {
-                printf("%s\n", entry_path);
-            }
+            if ((entry_info.st_mode & 0777) == (perm_string_to_int(perm_str) & 0777)) {
+            	if (strncmp(entry_path, home_dir, home_dir_len) == 0) {
+                    printf("~%s\n", entry_path + home_dir_len);
+                } else {
+                    printf("%s\n", entry_path);
+                }
+	    }
         }
     }
 
@@ -116,8 +142,7 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Error: Required argument -p <permissions string> not found.\n");
 	    exit(EXIT_FAILURE);
     }
-DIR* dir = opendir(dir_path);
-    if (dir == NULL) {
+    if (access(dir_path, F_OK)!= 0) {
        fprintf(stderr, "Error: Cannot stat '%s'. No such file or directory.\n", dir_path);
          exit(EXIT_FAILURE);
     }
