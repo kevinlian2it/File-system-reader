@@ -8,11 +8,11 @@
 
 #define MAX_PATH_LENGTH 4096
 
-void print_usage() {
-    printf("Usage: pfind -d <directory> -p <permissions string> [-h]\n");
+void print_usage(char* argv) {
+    printf("Usage: %s -d <directory> -p <permissions string> [-h]\n",argv);
 }
-void print_usage_error() {
-    fprintf(stderr,"Usage: pfind -d <directory> -p <permissions string> [-h]\n");
+void print_usage_error(char* argv) {
+    fprintf(stderr,"Usage: %s -d <directory> -p <permissions string> [-h]\n",argv);
 }
 
 bool validate_permissions_string(const char* perm_str) {
@@ -100,13 +100,13 @@ int main(int argc, char** argv) {
     char* perm_str = NULL;
     int opt;
     if(argc == 1) {
-	print_usage_error();
+	print_usage_error(argv[0]);
 	exit(EXIT_FAILURE);
     }
     while ((opt = getopt(argc, argv, ":hd:p:")) != -1) {
         switch (opt) {
         case 'h':
-            print_usage();
+            print_usage(argv[0]);
             exit(EXIT_SUCCESS);
         case 'd':
             dir_path = optarg;
