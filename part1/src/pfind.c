@@ -57,10 +57,18 @@ void pfind(const char* dir_path, const char* perm_str,int start) {
     struct dirent* entry;
     struct stat entry_info;
     char entry_path[MAX_PATH_LENGTH];
-    if (lstat(dir_path, &dir_info) != 0) {
-    	fprintf(stderr, "Error: %s\n", "Cannot stat file.");
-    	exit(EXIT_FAILURE);
-    } 
+    if(start) {
+	if (stat(dir_path, &dir_info) != 0) {
+            fprintf(stderr, "Error: %s\n", "Cannot stat file.");
+            exit(EXIT_FAILURE);
+    	}
+    }
+    else {
+    	if (lstat(dir_path, &dir_info) != 0) {
+    	    fprintf(stderr, "Error: %s\n", "Cannot stat file.");
+    	    exit(EXIT_FAILURE);
+    	} 
+    }
     dir = opendir(dir_path);
     if (dir == NULL) {
         fprintf(stderr, "Error: Cannot open directory '%s'. Permission denied.\n",dir_path);
