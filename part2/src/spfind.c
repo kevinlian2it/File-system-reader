@@ -8,9 +8,9 @@
 #define BUFFER_SIZE 4096
 
 // Function to count the number of newline characters in a buffer
-int count_newlines(char *buffer, int size) {
-    int count = 0;
-    for (int i = 0; i < size; i++) {
+unsigned int count_newlines(char *buffer, unsigned int size) {
+    unsigned int count = 0;
+    for (unsigned int i = 0; i < size; i++) {
         if (buffer[i] == '\n') {
             count++;
         }
@@ -21,11 +21,11 @@ int count_newlines(char *buffer, int size) {
 int main(int argc, char *argv[]) {
     int pfind_to_sort_pipe[2];
     int sort_to_parent_pipe[2];
-    int line_count = 0;
+    unsigned int line_count = 0;
 
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s -d <directory> -p <permissions string> [-h]\n",argv[0]);
-        exit(EXIT_FAILURE);
+        printf("Usage: %s -d <directory> -p <permissions string> [-h]\n",argv[0]);
+        exit(EXIT_SUCCESS);
     }
 
     // Create pipes
@@ -46,21 +46,21 @@ int main(int argc, char *argv[]) {
         
 	// Execute pfind with the remaining arguments
         char *args[argc];
-        args[0] = "./pfind";
+        args[0] = "./spfind";
         for (int i = 1; i < argc; i++) {
-            args[i] = argv[i + 1];
+            args[i] = argv[i];
         }
         args[argc] = NULL;
 	if (dup2(STDERR_FILENO, STDERR_FILENO) < 0) {
-    perror("dup2");
-    exit(EXIT_FAILURE);
-}
+    	    perror("dup2");
+	    exit(EXIT_FAILURE);
+	}
 
-// Execute pfind
-if (execvp("./pfind", args) == -1) {
-    perror("execvp");
-    exit(EXIT_FAILURE);
-}
+	// Execute pfind
+	if (execvp("./pfind", args) == -1) {
+	   perror("pfind");
+	   exit(EXIT_FAILURE);
+	}
     }
     pid_t pid2 = fork();
     if (pid2 == -1) {
@@ -94,33 +94,35 @@ if (execvp("./pfind", args) == -1) {
 
     // Check if child processes terminated normally
     if (!WIFEXITED(status1)) {
-        fprintf(stderr, "Error: pfind did not terminate normally\n");
-        exit(EXIT_FAILURE);
+	fprintf(stderr, "Error: pfind did not terminate normally\n");
+	exit(EXIT_FAILURE);
     }
 
     // Check if pfind returned non-zero exit status
     if (WEXITSTATUS(status1) != EXIT_SUCCESS) {
-        fprintf(stderr, "Error: pfind exited with non-zero status\n");
-        exit(EXIT_FAILURE);
+	fprintf(stderr, "Error: pfind exited with non-zero status\n");
+	exit(EXIT_FAILURE);
     }
-
-    close(pfind_to_sort_pipe[1]);
-    close(sort_to_parent_pipe[0]);
-
     // Read output from sort process and count lines
     char buffer[BUFFER_SIZE];
     ssize_t bytes_read;
     while ((bytes_read = read(sort_to_parent_pipe[0], buffer, BUFFER_SIZE)) > 0) {
-        line_count += count_newlines(buffer, bytes_read);
+	write(STDOUT_FILENO, buffer, bytes_read);
+	if(buffer[0] == '/') {
+	    line_count += count_newlines(buffer, bytes_read);
+    	}
     }
-
     if (bytes_read == -1) {
         perror("read");
-        exit(EXIT_FAILURE);
     }
 
-    printf("%d\n", line_count);
-
+    close(pfind_to_sort_pipe[1]);
+    close(sort_to_parent_pipe[0]);
+    if(buffer[0] != '/') {
+	return EXIT_SUCCESS;
+    }
+    printf("Total matches: %d\n",line_count);
+    
     return EXIT_SUCCESS;
 }
 
