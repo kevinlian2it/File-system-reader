@@ -43,10 +43,10 @@ int main(int argc, char *argv[]) {
         close(pfind_to_sort_pipe[0]); // Close unused read end
         dup2(pfind_to_sort_pipe[1], STDOUT_FILENO); // Connect pipe to stdout
         close(pfind_to_sort_pipe[1]); // Close original write end
-
-        // Execute pfind with the remaining arguments
+        
+	// Execute pfind with the remaining arguments
         char *args[argc];
-        args[0] = "pfind";
+        args[0] = "./pfind";
         for (int i = 1; i < argc; i++) {
             args[i] = argv[i + 1];
         }
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 }
 
 // Execute pfind
-if (execvp("pfind", &argv[1]) == -1) {
+if (execvp("./pfind", args) == -1) {
     perror("execvp");
     exit(EXIT_FAILURE);
 }
