@@ -94,13 +94,18 @@ int main(int argc, char *argv[]) {
 
     // Check if child processes terminated normally
     if (!WIFEXITED(status1)) {
-	fprintf(stderr, "Error: pfind did not terminate normally\n");
+	fprintf(stderr, "Error: pfind failed.\n");
+	exit(EXIT_FAILURE);
+    }
+
+    if(!WIFEXITED(status2)) {
+	fprintf(stderr, "Error: sort failed.\n");
 	exit(EXIT_FAILURE);
     }
 
     // Check if pfind returned non-zero exit status
     if (WEXITSTATUS(status1) != EXIT_SUCCESS) {
-	fprintf(stderr, "Error: pfind exited with non-zero status\n");
+	fprintf(stderr, "Error: pfind failed.\n");
 	exit(EXIT_FAILURE);
     }
     // Read output from sort process and count lines
