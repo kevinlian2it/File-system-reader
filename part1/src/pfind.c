@@ -51,7 +51,7 @@ int perm_string_to_int(const char* perm_str) {
     }
     return perm;
 }
-void pfind(const char* dir_path, const char* perm_str,int start) {
+void pfind(const char* dir_path, const char* perm_str, int start, bool *found) {
     struct stat dir_info;
     DIR* dir;
     struct dirent* entry;
@@ -89,13 +89,15 @@ void pfind(const char* dir_path, const char* perm_str,int start) {
         if (S_ISDIR(entry_info.st_mode)) {
             if ((entry_info.st_mode & 0777) == (perm_string_to_int(perm_str) & 0777)) {
                     printf("%s\n", entry_path);
+	            *found = true;
             }
             if (entry_info.st_mode & S_IXUSR) { // recurse only if directory is executable
-                pfind(entry_path, perm_str,0);
+                pfind(entry_path, perm_str,0, found);
             }
         } else if (S_ISREG(entry_info.st_mode)) {
             if ((entry_info.st_mode & 0777) == (perm_string_to_int(perm_str) & 0777)) {
                     printf("%s\n", entry_path);
+		    *found = true;
 	    }
         }
     }
@@ -107,6 +109,7 @@ int main(int argc, char** argv) {
     char* dir_path = NULL;
     char* perm_str = NULL;
     int opt;
+    bool found = false;
     if(argc == 1) {
 	print_usage_error(argv[0]);
 	exit(EXIT_FAILURE);
@@ -127,25 +130,29 @@ int main(int argc, char** argv) {
 	    exit(EXIT_FAILURE);
 	}
 	}
-	if (dir_path == NULL) {
-            fprintf(stderr, "Error: Required argument -d <directory> not found.\n");
-            exit(EXIT_FAILURE);
-        }
-    	if (perm_str == NULL) {
-       	    fprintf(stderr, "Error: Required argument -p <permissions string> not found.\n");
-	    exit(EXIT_FAILURE);
+    if (dir_path == NULL) {
+        fprintf(stderr, "Error: Required argument -d <directory> not found.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (perm_str == NULL) {
+       	fprintf(stderr, "Error: Required argument -p <permissions string> not found.\n");
+	exit(EXIT_FAILURE);
     }
     if (access(dir_path, F_OK)!= 0) {
-       fprintf(stderr, "Error: Cannot stat '%s'. No such file or directory.\n", dir_path);
-         exit(EXIT_FAILURE);
+        fprintf(stderr, "Error: Cannot stat '%s'. No such file or directory.\n", dir_path);
+        exit(EXIT_FAILURE);
     }
     if (!validate_permissions_string(perm_str)) {
         fprintf(stderr, "Error: Permissions string '%s' is invalid.\n", perm_str);
-	    exit(EXIT_FAILURE);
+	exit(EXIT_FAILURE);
     }
 
-    pfind(dir_path, perm_str,1);
-
+    pfind(dir_path, perm_str,1,&found);
+     
+    if (!found) {
+        fprintf(stderr, "Error: No files matching permission string '%s' were found.\nError: pfind failed.\n", perm_str);
+        exit(EXIT_FAILURE);
+    }
     return EXIT_SUCCESS;
 }
 
